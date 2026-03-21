@@ -1,0 +1,9 @@
+{
+  "name": "Facturas App",
+  "short_name": "Facturas",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": []
+}
