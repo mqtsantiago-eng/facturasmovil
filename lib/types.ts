@@ -12,6 +12,7 @@ export interface Empresa {
   politica_proteccion_datos: string | null
   created_at: string
   updated_at: string
+  precios_con_iva?: boolean
 }
 
 export interface Cliente {

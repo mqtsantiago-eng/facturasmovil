@@ -27,6 +27,9 @@ interface ItemFactura {
   precio_unidad: number
 }
 
+// ✅ FUNCIÓN DE REDONDEO PROFESIONAL
+const round2 = (num: number) => Math.round(num * 100) / 100
+
 export default function NuevaFacturaPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [empresa, setEmpresa] = useState<Empresa | null>(null)
@@ -81,9 +84,42 @@ export default function NuevaFacturaPage() {
     ))
   }
 
-  const totalBase = items.reduce((sum, item) => sum + (item.cantidad * item.precio_unidad), 0)
-  const totalIva = empresa ? totalBase * (empresa.iva_porcentaje / 100) : 0
-  const total = totalBase + totalIva
+  // ✅ VALORES SEGUROS
+  const iva = empresa?.iva_porcentaje ?? 0
+  const preciosConIva = empresa?.precios_con_iva ?? false
+
+  // 🔥 1. REDONDEO POR LÍNEA (CLAVE EN ESPAÑA)
+  const subtotales = items.map(item =>
+    round2(item.cantidad * item.precio_unidad)
+  )
+
+  const totalBruto = round2(
+    subtotales.reduce((sum, val) => sum + val, 0)
+  )
+
+  let totalBase = 0
+  let totalIva = 0
+  let total = 0
+
+  // 🔥 2. LÓGICA CORRECTA CON REDONDEO
+  if (preciosConIva) {
+    total = round2(totalBruto)
+
+    totalBase = round2(
+      total / (1 + iva / 100)
+    )
+
+    totalIva = round2(total - totalBase)
+
+  } else {
+    totalBase = round2(totalBruto)
+
+    totalIva = round2(
+      totalBase * (iva / 100)
+    )
+
+    total = round2(totalBase + totalIva)
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -101,11 +137,9 @@ export default function NuevaFacturaPage() {
     setIsLoading(true)
     const supabase = createClient()
 
-    // Generar numero de factura
     const nuevoNumero = empresa.ultimo_numero_factura + 1
     const numeroFactura = `${new Date().getFullYear()}-${String(nuevoNumero).padStart(4, '0')}`
 
-    // Crear factura
     const { data: factura, error: facturaError } = await supabase
       .from('facturas')
       .insert({
@@ -127,7 +161,6 @@ export default function NuevaFacturaPage() {
       return
     }
 
-    // Crear items
     const itemsToInsert = validItems.map(item => ({
       factura_id: factura.id,
       nombre: item.nombre,
@@ -145,7 +178,6 @@ export default function NuevaFacturaPage() {
       return
     }
 
-    // Actualizar numero de factura en empresa
     await supabase
       .from('empresas')
       .update({ ultimo_numero_factura: nuevoNumero })
@@ -177,6 +209,8 @@ export default function NuevaFacturaPage() {
       </header>
 
       <form onSubmit={handleSubmit} className="p-4 space-y-4">
+        {/* TODO tu UI intacta */}
+        
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Datos generales</CardTitle>

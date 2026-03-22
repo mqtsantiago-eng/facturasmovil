@@ -1,3 +1,6 @@
+// C:\dev\facturasmovil\app\(protected)\empresa\page.tsx
+
+
 import { createClient } from '@/lib/supabase/server'
 import { redirect } from 'next/navigation'
 import { EmpresaForm } from '@/components/empresa-form'
@@ -24,6 +27,8 @@ export default async function EmpresaPage() {
     .select('*')
     .eq('user_id', user.id)
     .single()
+
+console.log('EMPRESA:', empresa)
 
   if (!empresa) {
     redirect('/empresa/configurar')

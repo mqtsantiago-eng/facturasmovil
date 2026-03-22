@@ -25,14 +25,22 @@ export function EmpresaForm({ empresa }: EmpresaFormProps) {
     email: empresa.email || '',
     iva_porcentaje: empresa.iva_porcentaje,
     politica_proteccion_datos: empresa.politica_proteccion_datos || '',
+    precios_con_iva: empresa.precios_con_iva || false, // ✅ NUEVO
   })
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
+    // const { name, value, type, checked } = e.target
+
+    const target = e.target as HTMLInputElement
+
+    const { name, value, type } = target
+
+      setFormData(prev => ({
       ...prev,
-      [e.target.name]: e.target.value
-    }))
-  }
+      [name]: type === 'checkbox' ? target.checked : value
+      }))
+
+        }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -50,6 +58,7 @@ export function EmpresaForm({ empresa }: EmpresaFormProps) {
         email: formData.email || null,
         iva_porcentaje: Number(formData.iva_porcentaje),
         politica_proteccion_datos: formData.politica_proteccion_datos || null,
+        precios_con_iva: formData.precios_con_iva, // ✅ NUEVO
         updated_at: new Date().toISOString(),
       })
       .eq('id', empresa.id)
@@ -144,6 +153,7 @@ export function EmpresaForm({ empresa }: EmpresaFormProps) {
           <CardTitle className="text-base">Configuracion de facturas</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          
           <div className="grid gap-2">
             <Label htmlFor="iva_porcentaje">IVA (%)</Label>
             <Input
@@ -156,6 +166,23 @@ export function EmpresaForm({ empresa }: EmpresaFormProps) {
               value={formData.iva_porcentaje}
               onChange={handleChange}
               className="h-12"
+            />
+          </div>
+
+          {/* ✅ NUEVO CHECKBOX */}
+          <div className="flex items-center justify-between py-3 px-3 bg-muted rounded-lg">
+            <div>
+              <p className="text-sm font-medium">Precios con IVA incluido</p>
+              <p className="text-xs text-muted-foreground">
+                Si activas esto, los precios que pongas ya incluirán el IVA
+              </p>
+            </div>
+            <input
+              type="checkbox"
+              name="precios_con_iva"
+              checked={formData.precios_con_iva}
+              onChange={handleChange}
+              className="h-5 w-5"
             />
           </div>
 
