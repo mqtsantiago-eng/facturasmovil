@@ -19,7 +19,7 @@ export default function NuevoClientePage() {
 
   useEffect(() => {
     async function getEmpresa() {
-      const supabase = createClient()
+      const supabase = createClient()!
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
@@ -45,7 +45,7 @@ export default function NuevoClientePage() {
 
     setIsLoading(true)
     const formData = new FormData(e.currentTarget)
-    const supabase = createClient()
+    const supabase = createClient()!
 
     const { error } = await supabase.from('clientes').insert({
       empresa_id: empresaId,

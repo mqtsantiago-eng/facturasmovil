@@ -1,75 +1,61 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
-import { Spinner } from '@/components/ui/spinner'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from '@/components/ui/alert-dialog'
-import { Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { Trash2, CheckCircle, Send, FileText, Clipboard } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import { toast } from 'sonner'
 
-interface FacturaActionsProps {
+interface Props {
   facturaId: string
   estado: string
+  numeroFactura?: string
+  total?: number
 }
 
-const estados = [
-  { value: 'borrador', label: 'Borrador' },
-  { value: 'emitida', label: 'Emitida' },
-  { value: 'pagada', label: 'Pagada' },
-  { value: 'anulada', label: 'Anulada' },
-]
-
-export function FacturaActions({ facturaId, estado }: FacturaActionsProps) {
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [isDeleting, setIsDeleting] = useState(false)
-  const [currentEstado, setCurrentEstado] = useState(estado)
+export function FacturaActions({
+  facturaId,
+  estado,
+  numeroFactura,
+  total,
+}: Props) {
   const router = useRouter()
+  const supabase = createClient()
+  const [urlPDF, setUrlPDF] = useState('')
 
-  const handleEstadoChange = async (nuevoEstado: string) => {
-    setIsUpdating(true)
-    const supabase = createClient()
+  useEffect(() => {
+    setUrlPDF(`${window.location.origin}/api/pdf/${facturaId}`)
+  }, [facturaId])
+
+  const cambiarEstado = async (nuevoEstado: string) => {
+    if (!supabase) {
+      toast.error('No se pudo inicializar Supabase')
+      return
+    }
 
     const { error } = await supabase
       .from('facturas')
-      .update({ 
-        estado: nuevoEstado,
-        updated_at: new Date().toISOString()
-      })
+      .update({ estado: nuevoEstado })
       .eq('id', facturaId)
 
     if (error) {
       toast.error('Error al actualizar estado')
-    } else {
-      setCurrentEstado(nuevoEstado)
-      toast.success('Estado actualizado')
-      router.refresh()
+      return
     }
 
-    setIsUpdating(false)
+    toast.success('Estado actualizado')
+    router.refresh()
   }
 
-  const handleDelete = async () => {
-    setIsDeleting(true)
-    const supabase = createClient()
+  const eliminarFactura = async () => {
+    if (!supabase) {
+      toast.error('No se pudo inicializar Supabase')
+      return
+    }
+
+    const confirm = window.confirm('¿Eliminar esta factura?')
+    if (!confirm) return
 
     const { error } = await supabase
       .from('facturas')
@@ -77,8 +63,7 @@ export function FacturaActions({ facturaId, estado }: FacturaActionsProps) {
       .eq('id', facturaId)
 
     if (error) {
-      toast.error('Error al eliminar: ' + error.message)
-      setIsDeleting(false)
+      toast.error('Error al eliminar')
       return
     }
 
@@ -86,55 +71,81 @@ export function FacturaActions({ facturaId, estado }: FacturaActionsProps) {
     router.push('/facturas')
   }
 
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <span className="text-sm text-muted-foreground shrink-0">Estado:</span>
-        <Select
-          value={currentEstado}
-          onValueChange={handleEstadoChange}
-          disabled={isUpdating}
-        >
-          <SelectTrigger className="flex-1 h-12">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {estados.map((e) => (
-              <SelectItem key={e.value} value={e.value}>
-                {e.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {isUpdating && <Spinner />}
-      </div>
+  const mensajeWhatsapp = `Hola, te envío la factura ${numeroFactura || ''} por importe de ${
+    total
+      ? Number(total).toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })
+      : ''
+  }`
 
-      <AlertDialog>
-        <AlertDialogTrigger asChild>
-          <Button variant="outline" className="w-full h-12 text-destructive border-destructive/30">
-            <Trash2 className="h-5 w-5 mr-2" />
-            Eliminar Factura
-          </Button>
-        </AlertDialogTrigger>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Eliminar factura</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta accion no se puede deshacer. Se eliminara la factura y todos sus items permanentemente.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              disabled={isDeleting}
-            >
-              {isDeleting ? 'Eliminando...' : 'Eliminar'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+  return (
+    <div className="space-y-2">
+
+      {estado !== 'pagada' && (
+        <Button
+          className="w-full h-12 bg-green-600 hover:bg-green-700 text-white"
+          onClick={() => cambiarEstado('pagada')}
+        >
+          <CheckCircle className="h-4 w-4 mr-2" />
+          Marcar como pagada
+        </Button>
+      )}
+
+      {estado === 'borrador' && (
+        <Button
+          variant="secondary"
+          className="w-full h-12"
+          onClick={() => cambiarEstado('emitida')}
+        >
+          <Send className="h-4 w-4 mr-2" />
+          Marcar como emitida
+        </Button>
+      )}
+
+      <Button variant="outline" className="w-full h-12" asChild>
+        <a
+          href={`https://wa.me/?text=${encodeURIComponent(mensajeWhatsapp)}`}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          Enviar por WhatsApp
+        </a>
+      </Button>
+
+      <Button
+        variant="outline"
+        className="w-full h-12"
+        asChild
+        disabled={!urlPDF}
+      >
+        <a href={urlPDF} target="_blank" rel="noopener noreferrer">
+          <FileText className="h-4 w-4 mr-2" />
+          Ver/Compartir PDF
+        </a>
+      </Button>
+
+      <Button
+        variant="outline"
+        className="w-full h-12"
+        onClick={() => {
+          if (urlPDF) {
+            navigator.clipboard.writeText(urlPDF)
+            toast.success('Enlace copiado al portapapeles')
+          }
+        }}
+        disabled={!urlPDF}
+      >
+        <Clipboard className="h-4 w-4 mr-2" />
+        Copiar enlace PDF
+      </Button>
+
+      <Button
+        variant="destructive"
+        className="w-full h-12"
+        onClick={eliminarFactura}
+      >
+        <Trash2 className="h-4 w-4 mr-2" />
+        Eliminar factura
+      </Button>
     </div>
   )
 }

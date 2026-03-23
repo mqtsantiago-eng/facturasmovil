@@ -6,7 +6,8 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
-import { ArrowLeft, Trash2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge' // <-- este
+import { ArrowLeft, Trash2, ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
@@ -22,28 +23,68 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
-import type { Cliente } from '@/lib/types'
+
+const estadoColors: Record<string, string> = {
+  borrador: 'bg-muted text-muted-foreground',
+  emitida: 'bg-blue-100 text-blue-800',
+  pagada: 'bg-green-100 text-green-800',
+  anulada: 'bg-red-100 text-red-800',
+}
+
+const estadoLabels: Record<string, string> = {
+  borrador: 'Borrador',
+  emitida: 'Emitida',
+  pagada: 'Pagada',
+  anulada: 'Anulada',
+}
+
+interface Cliente {
+  id: string
+  nombre: string
+  cif?: string
+  direccion?: string
+  telefono?: string
+  email?: string
+}
+
+interface Factura {
+  id: string
+  numero_factura: string
+  estado: string
+  total: number
+}
 
 export default function EditarClientePage() {
   const [isLoading, setIsLoading] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
   const [cliente, setCliente] = useState<Cliente | null>(null)
+  const [facturas, setFacturas] = useState<Factura[]>([])
+  const [filtroEstado, setFiltroEstado] = useState<string>('todos')
   const router = useRouter()
   const params = useParams()
   const clienteId = params.id as string
 
+  const supabase = createClient()!
+
   useEffect(() => {
     async function fetchCliente() {
-      const supabase = createClient()
-      const { data } = await supabase
+      const { data: clienteData } = await supabase
         .from('clientes')
         .select('*')
         .eq('id', clienteId)
         .single()
 
-      if (data) {
-        setCliente(data)
+      if (clienteData) {
+        setCliente(clienteData)
       }
+
+      const { data: facturasData } = await supabase
+        .from('facturas')
+        .select('*')
+        .eq('cliente_id', clienteId)
+        .order('fecha', { ascending: false })
+
+      setFacturas(facturasData || [])
     }
     fetchCliente()
   }, [clienteId])
@@ -53,16 +94,14 @@ export default function EditarClientePage() {
     setIsLoading(true)
 
     const formData = new FormData(e.currentTarget)
-    const supabase = createClient()
-
     const { error } = await supabase
       .from('clientes')
       .update({
         nombre: formData.get('nombre') as string,
-        cif: formData.get('cif') as string || null,
-        direccion: formData.get('direccion') as string || null,
-        telefono: formData.get('telefono') as string || null,
-        email: formData.get('email') as string || null,
+        cif: (formData.get('cif') as string) || null,
+        direccion: (formData.get('direccion') as string) || null,
+        telefono: (formData.get('telefono') as string) || null,
+        email: (formData.get('email') as string) || null,
         updated_at: new Date().toISOString(),
       })
       .eq('id', clienteId)
@@ -72,14 +111,11 @@ export default function EditarClientePage() {
     } else {
       toast.success('Cliente actualizado')
     }
-
     setIsLoading(false)
   }
 
   const handleDelete = async () => {
     setIsDeleting(true)
-    const supabase = createClient()
-
     const { error } = await supabase
       .from('clientes')
       .delete()
@@ -95,6 +131,10 @@ export default function EditarClientePage() {
     router.push('/clientes')
   }
 
+  const facturasFiltradas = filtroEstado === 'todos'
+    ? facturas
+    : facturas.filter(f => f.estado === filtroEstado)
+
   if (!cliente) {
     return (
       <div className="flex items-center justify-center min-h-svh">
@@ -104,7 +144,8 @@ export default function EditarClientePage() {
   }
 
   return (
-    <div className="flex flex-col">
+    <div className="flex flex-col min-h-svh">
+      {/* Header */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
         <div className="flex h-14 items-center justify-between px-4">
           <div className="flex items-center gap-3">
@@ -113,8 +154,9 @@ export default function EditarClientePage() {
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>
-            <h1 className="text-lg font-semibold">Editar Cliente</h1>
+            <h1 className="text-lg font-semibold truncate">{cliente.nombre}</h1>
           </div>
+
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="ghost" size="icon" className="text-destructive">
@@ -143,70 +185,39 @@ export default function EditarClientePage() {
         </div>
       </header>
 
-      <div className="p-4">
+      <div className="p-4 space-y-4">
+        {/* Formulario editar cliente */}
         <form onSubmit={handleSubmit}>
           <Card>
             <CardContent className="pt-6 space-y-4">
               <div className="grid gap-2">
                 <Label htmlFor="nombre">Nombre *</Label>
-                <Input
-                  id="nombre"
-                  name="nombre"
-                  defaultValue={cliente.nombre}
-                  required
-                  className="h-12"
-                />
+                <Input id="nombre" name="nombre" defaultValue={cliente.nombre} required className="h-12" />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="cif">CIF/NIF</Label>
-                <Input
-                  id="cif"
-                  name="cif"
-                  defaultValue={cliente.cif || ''}
-                  className="h-12"
-                />
+                <Input id="cif" name="cif" defaultValue={cliente.cif || ''} className="h-12" />
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="direccion">Direccion</Label>
-                <Input
-                  id="direccion"
-                  name="direccion"
-                  defaultValue={cliente.direccion || ''}
-                  className="h-12"
-                />
+                <Label htmlFor="direccion">Dirección</Label>
+                <Input id="direccion" name="direccion" defaultValue={cliente.direccion || ''} className="h-12" />
               </div>
 
               <div className="grid gap-2">
-                <Label htmlFor="telefono">Telefono</Label>
-                <Input
-                  id="telefono"
-                  name="telefono"
-                  type="tel"
-                  defaultValue={cliente.telefono || ''}
-                  className="h-12"
-                />
+                <Label htmlFor="telefono">Teléfono</Label>
+                <Input id="telefono" name="telefono" type="tel" defaultValue={cliente.telefono || ''} className="h-12" />
               </div>
 
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  defaultValue={cliente.email || ''}
-                  className="h-12"
-                />
+                <Input id="email" name="email" type="email" defaultValue={cliente.email || ''} className="h-12" />
               </div>
             </CardContent>
           </Card>
 
-          <Button 
-            type="submit" 
-            className="w-full h-12 text-base mt-4" 
-            disabled={isLoading}
-          >
+          <Button type="submit" className="w-full h-12 text-base mt-4" disabled={isLoading}>
             {isLoading ? (
               <>
                 <Spinner className="mr-2" />
@@ -217,6 +228,48 @@ export default function EditarClientePage() {
             )}
           </Button>
         </form>
+
+        {/* Filtro estado facturas */}
+        <div className="flex gap-2 overflow-x-auto pt-4">
+          {['todos', 'borrador', 'emitida', 'pagada', 'anulada'].map(estado => (
+            <Button
+              key={estado}
+              size="sm"
+              variant={filtroEstado === estado ? 'default' : 'outline'}
+              onClick={() => setFiltroEstado(estado)}
+            >
+              {estado === 'todos' ? 'Todos' : estadoLabels[estado]}
+            </Button>
+          ))}
+        </div>
+
+        {/* Lista facturas */}
+        {facturasFiltradas.length === 0 ? (
+          <Card className="p-4 text-center text-sm text-muted-foreground">
+            Este cliente no tiene facturas
+          </Card>
+        ) : (
+          <div className="space-y-3 pt-2">
+            {facturasFiltradas.map(f => (
+              <Link key={f.id} href={`/facturas/${f.id}`}>
+                <Card className="hover:bg-muted/50 transition-colors">
+                  <CardContent className="flex justify-between items-center p-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-mono font-semibold truncate">{f.numero_factura}</p>
+                      <span className="text-sm text-muted-foreground">
+                        {f.total.toLocaleString('es-ES', { style: 'currency', currency: 'EUR' })}
+                      </span>
+                    </div>
+                    <Badge className={estadoColors[f.estado]}>
+                      {estadoLabels[f.estado]}
+                    </Badge>
+                    <ChevronRight className="h-5 w-5 text-muted-foreground ml-2" />
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   )

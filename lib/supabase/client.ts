@@ -1,6 +1,9 @@
+// lib/supabase/client.ts
 import { createBrowserClient } from '@supabase/ssr'
 
 export function createClient() {
+  if (typeof document === 'undefined') return null
+
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -9,7 +12,7 @@ export function createClient() {
         getAll() {
           return document.cookie
             .split('; ')
-            .map((c) => {
+            .map(c => {
               const [name, ...rest] = c.split('=')
               return { name, value: rest.join('=') }
             })
@@ -17,14 +20,8 @@ export function createClient() {
         setAll(cookies) {
           cookies.forEach(({ name, value, options }) => {
             let cookie = `${name}=${value}; path=/`
-
-            if (options?.maxAge) {
-              cookie += `; max-age=${options.maxAge}`
-            }
-
-            // 🔥 CLAVE para móvil
+            if (options?.maxAge) cookie += `; max-age=${options.maxAge}`
             cookie += '; SameSite=Lax'
-
             document.cookie = cookie
           })
         },
