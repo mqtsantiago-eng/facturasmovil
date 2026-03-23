@@ -9,6 +9,7 @@ import { ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
 import { FacturaActions } from '@/components/factura-actions'
 import { GenerarPdfButton } from '@/components/generar-pdf-button'
+import { FacturaActionsMenu } from '@/components/factura-actions-menu'
 
 const estadoColors: Record<string, string> = {
   borrador: 'bg-muted text-muted-foreground',
@@ -63,7 +64,7 @@ export default async function FacturaDetallePage({
   }
 
   return (
-    <div className="flex flex-col min-h-svh bg-muted/20">
+    <div className="flex flex-col min-h-screen bg-muted/20">
 
       {/* HEADER */}
       <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
@@ -90,7 +91,7 @@ export default async function FacturaDetallePage({
       </header>
 
       {/* CONTENT */}
-      <div className="flex-1 p-4 space-y-4 pb-32">
+      <div className="flex-1 p-4 space-y-4">
 
         {/* TOTAL DESTACADO */}
         <Card className="rounded-2xl">
@@ -194,35 +195,28 @@ export default async function FacturaDetallePage({
       </div>
 
       {/* ACCIONES FIJAS ABAJO */}
-      <div className="flex gap-2">
+      {/* ACCIONES ABAJO PRO */}
+<div className="sticky bottom-0 p-4 border-t bg-background">
+  <div className="flex gap-2">
 
-      {/* BOTÓN PRINCIPAL */}
-      <div className="flex-1">
-        <GenerarPdfButton
-          factura={factura}
-          empresa={empresa}
-          />
-      </div>
+    {/* BOTÓN PDF */}
+    <div className="flex-1">
+      <GenerarPdfButton
+        factura={factura}
+        empresa={empresa}
+      />
+    </div>
 
-      {/* MENÚ DESPLEGABLE */}
-        <details className="flex-1">
-
-        <summary className="h-12 flex items-center justify-center rounded-xl border text-sm cursor-pointer">
-          Acciones
-        </summary>
-
-        <div className="mt-2 space-y-2">
-          <FacturaActions
-          facturaId={factura.id}
-          estado={factura.estado}
-          numeroFactura={factura.numero_factura}
-          total={factura.total}
-          />
-        </div>
-
-      </details>
+    {/* MENÚ PRO (EL NUEVO) */}
+    <FacturaActionsMenu
+      facturaId={factura.id}
+      estado={factura.estado}
+      numeroFactura={factura.numero_factura}
+      total={factura.total}
+    />
 
   </div>
+</div>
     </div>
   )
 }
