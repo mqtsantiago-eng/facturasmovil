@@ -194,21 +194,35 @@ export default async function FacturaDetallePage({
       </div>
 
       {/* ACCIONES FIJAS ABAJO */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 border-t bg-background space-y-2">
+      <div className="flex gap-2">
 
+      {/* BOTÓN PRINCIPAL */}
+      <div className="flex-1">
         <GenerarPdfButton
           factura={factura}
           empresa={empresa}
-        />
+          />
+      </div>
 
-        <FacturaActions
+      {/* MENÚ DESPLEGABLE */}
+        <details className="flex-1">
+
+        <summary className="h-12 flex items-center justify-center rounded-xl border text-sm cursor-pointer">
+          Acciones
+        </summary>
+
+        <div className="mt-2 space-y-2">
+          <FacturaActions
           facturaId={factura.id}
           estado={factura.estado}
           numeroFactura={factura.numero_factura}
           total={factura.total}
-        />
+          />
+        </div>
 
-      </div>
+      </details>
+
+  </div>
     </div>
   )
 }
