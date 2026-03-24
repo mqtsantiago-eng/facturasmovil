@@ -97,7 +97,7 @@ export function FacturaActions({
           onClick={() => cambiarEstado('emitida')}
         >
           <Send className="h-4 w-4 mr-2" />
-          Marcar como emitida
+          Marcar como Emitida
         </Button>
       )}
 

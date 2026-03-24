@@ -254,7 +254,7 @@ export default function EditarClientePage() {
 
         {/* Filtro estado facturas */}
         <div className="flex gap-2 overflow-x-auto pt-4">
-          {['todos', 'borrador', 'emitida', 'pagada', 'anulada'].map(estado => (
+          {['todos', 'borrador', 'emitida', 'pagada'].map(estado => (
             <Button
               key={estado}
               size="sm"
