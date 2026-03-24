@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Spinner } from '@/components/ui/spinner'
 import { Badge } from '@/components/ui/badge' // <-- este
-import { ArrowLeft, Trash2, ChevronRight } from 'lucide-react'
+import { ArrowLeft, Trash2, ChevronRight, Search } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useParams } from 'next/navigation'
 import { useState, useEffect } from 'react'
@@ -60,6 +60,7 @@ export default function EditarClientePage() {
   const [cliente, setCliente] = useState<Cliente | null>(null)
   const [facturas, setFacturas] = useState<Factura[]>([])
   const [filtroEstado, setFiltroEstado] = useState<string>('todos')
+  const [busqueda, setBusqueda] = useState('')
   const router = useRouter()
   const params = useParams()
   const clienteId = params.id as string
@@ -131,9 +132,14 @@ export default function EditarClientePage() {
     router.push('/clientes')
   }
 
-  const facturasFiltradas = filtroEstado === 'todos'
-    ? facturas
-    : facturas.filter(f => f.estado === filtroEstado)
+  const facturasFiltradas = facturas.filter((f) => {
+  const coincideEstado = filtroEstado === 'todos' || f.estado === filtroEstado
+  const coincideBusqueda = f.numero_factura
+    .toLowerCase()
+    .includes(busqueda.toLowerCase())
+
+  return coincideEstado && coincideBusqueda
+})
 
   if (!cliente) {
     return (
@@ -228,6 +234,23 @@ export default function EditarClientePage() {
             )}
           </Button>
         </form>
+
+{/* Buscador de facturas */}
+<div className="relative pt-4">
+
+  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+
+  <Input
+    placeholder="Buscar factura..."
+    value={busqueda}
+    onChange={(e) => setBusqueda(e.target.value)}
+    className="pl-9 h-10"
+  />
+
+</div>
+
+
+
 
         {/* Filtro estado facturas */}
         <div className="flex gap-2 overflow-x-auto pt-4">

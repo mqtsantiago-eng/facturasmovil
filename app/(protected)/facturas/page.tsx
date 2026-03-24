@@ -104,53 +104,72 @@ export default async function FacturasPage() {
           </Empty>
         ) : (
           <div className="space-y-3">
-            {facturas.map((factura) => (
-              <Link key={factura.id} href={`/facturas/${factura.id}`}>
-                <Card className="active:scale-[0.98] transition-transform rounded-2xl shadow-sm border">
-                  <CardContent className="p-4">
-                    
-                    {/* TOP ROW */}
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="font-mono text-sm font-semibold">
-                        {factura.numero_factura}
-                      </p>
+{facturas.map((factura, index) => {
 
-                      <Badge
-                        className={`text-xs px-2 py-0.5 ${estadoColors[factura.estado]}`}
-                      >
-                        {estadoLabels[factura.estado]}
-                      </Badge>
-                    </div>
+  const fecha = new Date(factura.fecha)
 
-                    {/* CLIENTE */}
-                    <p className="text-sm text-muted-foreground truncate">
-                      {factura.cliente?.nombre || 'Cliente desconocido'}
-                    </p>
+  const mesActual = fecha.toLocaleDateString('es-ES', {
+    month: 'long',
+    year: 'numeric',
+  })
 
-                    {/* BOTTOM ROW */}
-                    <div className="flex items-end justify-between mt-3">
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(factura.fecha).toLocaleDateString('es-ES')}
-                      </span>
+  const facturaAnterior = facturas[index - 1]
 
-                      <span className="text-lg font-bold">
-                        {Number(factura.total).toLocaleString('es-ES', {
-                          style: 'currency',
-                          currency: 'EUR',
-                        })}
-                      </span>
-                    </div>
+  const mesAnterior = facturaAnterior
+    ? new Date(facturaAnterior.fecha).toLocaleDateString('es-ES', {
+        month: 'long',
+        year: 'numeric',
+      })
+    : null
 
-                    {/* CHEVRON */}
-                    <div className="flex justify-end mt-2">
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    </div>
+  const mostrarSeparador = mesActual !== mesAnterior
 
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
+  return (
+    <div key={factura.id}>
+
+      {mostrarSeparador && (
+  <div className="sticky top-16 z-10 bg-muted/90 backdrop-blur px-2 py-1 rounded-sm">
+    <p className="text-[10px] font-semibold uppercase text-muted-foreground">
+      {mesActual}
+    </p>
+  </div>
+)}
+      <Link href={`/facturas/${factura.id}`}>
+        <Card className="active:scale-[0.97] transition-transform rounded-sm border shadow-sm">
+          <CardContent className="p-1">
+
+            {/* LÍNEA 1 */}
+            <div className="flex items-center justify-between text-[10px] leading-none mb-0.5">
+              <span className="font-mono font-semibold">{factura.numero_factura}</span>
+              <span className="text-muted-foreground">
+                {new Date(factura.fecha).toLocaleDateString('es-ES')}
+              </span>
+              <Badge className={`text-[8px] px-1 py-0.5 ${estadoColors[factura.estado]}`}>
+                {estadoLabels[factura.estado]}
+              </Badge>
+            </div>
+
+            {/* LÍNEA 2 */}
+            <div className="flex items-center justify-between text-[10px] font-medium leading-none">
+              <span className="truncate max-w-[60%]">
+                {factura.cliente?.nombre || 'Cliente desconocido'}
+              </span>
+              <span>
+                {Number(factura.total).toLocaleString('es-ES', {
+                  style: 'currency',
+                  currency: 'EUR',
+                })}
+              </span>
+            </div>
+
+          </CardContent>
+        </Card>
+      </Link>
+
+    </div>
+  )
+})}
+</div>
         )}
       </div>
 

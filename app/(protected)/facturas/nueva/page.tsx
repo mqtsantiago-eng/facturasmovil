@@ -1,7 +1,7 @@
 // C:\dev\facturasmovil\app\(protected)\facturas\nueva\page.tsx
 
 'use client'
-
+import { useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -36,6 +36,16 @@ export default function NuevaFacturaPage() {
   const [empresa, setEmpresa] = useState<Empresa | null>(null)
   const [clientes, setClientes] = useState<Cliente[]>([])
   const [clienteId, setClienteId] = useState<string>('')
+
+  const searchParams = useSearchParams()
+  const clienteIdFromUrl = searchParams.get('cliente')  // obtiene el id del cliente de la URL
+
+  useEffect(() => {
+  if (clienteIdFromUrl && !clienteId) {
+    setClienteId(clienteIdFromUrl)
+  }
+}, [clienteIdFromUrl, clienteId])
+
   const [fecha, setFecha] = useState(new Date().toISOString().split('T')[0])
   const [items, setItems] = useState<ItemFactura[]>([
     { id: crypto.randomUUID(), nombre: '', cantidad: 1, precio_unidad: 0 }
